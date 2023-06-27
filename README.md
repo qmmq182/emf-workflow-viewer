@@ -4,8 +4,8 @@ View EMF workflows(process tasks) as a dag graph.
 
 ## Install
 
- - First must search and install a dependency vscode extension `Graphviz Interactive Preview` (author: tintinweb).
- - Then install this extension `emf-workflow-viewer`.
+ - Install this extension `emf-workflow-viewer`.
+ - There is a dependency vscode extension `Graphviz Interactive Preview` (author: tintinweb) should be installed automatically. If not search from the vscode extension market and manually install it.
 
 ## How to use
 
