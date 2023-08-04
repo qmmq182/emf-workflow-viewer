@@ -1,22 +1,37 @@
 
 import { attribute as _, Digraph, Subgraph, Node, Edge, toDot } from 'ts-graphviz';
 
+const availableColorsForExecMode = ["greenyellow", "cyan", "coral", "navy"];
+
 class Order {
+    static execModeColorMap: Map<string, string> = new Map();
 
     orderId: string;
     parentIdList: string[];
     node: Node | undefined;
     nonExistentParentIdList: string[] = [];
+    parameters;
+    
 
-    constructor(orderId: string, parentIdList=[]) {
+    constructor(orderId: string, parentIdList=[], parameters="{}") {
         this.orderId = orderId;
         this.parentIdList = parentIdList;
+        this.parameters = JSON.parse(parameters);
     }
+
 
     getNode() {
         if (this.node === undefined) {
+            let execModeLabelAndColor = this.parseExecutionMode();
+            console.log("Parsed mode label and color: ");
+            console.log(execModeLabelAndColor);
+            let label = execModeLabelAndColor[0];
+            let color = execModeLabelAndColor[1];
             this.node = new Node(this.orderId, {
-                [_.shape]: 'box'
+                [_.shape]: 'box',
+                [_.label]: label,
+                [_.color]: color
+
             });
         }
         return this.node;
@@ -37,7 +52,45 @@ class Order {
         }
         return edges;
     }
-    
+
+    /**
+     * @returns A tuple that contains LABEL and COLOR
+     */
+    parseExecutionMode(): [string, string] {
+        let label = this.orderId;
+        let color = "black";
+        let execMode: string = this.parameters.labels?.execution_mode?.join(",");
+        console.log("parameters: " + this.parameters.labels);
+        if (execMode !== undefined) {
+            label = label + " (exec_mode: " +  execMode + ")";
+            color = Order.pickColorForExecMode(execMode);
+        }
+        return [label, color];
+    }
+
+
+    static pickColorForExecMode(execMode: string): string {
+        console.log("Picking color for " + execMode);
+        // First see if already picked a color
+        if (Order.execModeColorMap.has(execMode)) {
+            return Order.execModeColorMap.get(execMode) ?? "yellow";
+        }
+        let alreadyPickedColorByOthers = new Set(Order.execModeColorMap.values());
+        console.log(`Colors already picked by others that is not '${execMode}':`);
+        console.log(alreadyPickedColorByOthers);
+        for (let c of availableColorsForExecMode) {
+            console.log(`Test if ${c} is already used ...`);
+            if (!alreadyPickedColorByOthers.has(c)) {
+                console.log(`Not used. Picked color ${c} for ${execMode}`);
+                Order.execModeColorMap.set(execMode, c);
+                return c;
+
+            }
+        }
+        return "yellow";
+
+    }
+
 }
 
 class NonExistentOrder extends Order {
@@ -75,7 +128,8 @@ export function convertEmfWorkflowToDot(text: string) {
         let jsonLine = JSON.parse(line);
         let orderId = jsonLine.order_id;
         console.log(orderId);
-        let order = new Order(orderId, jsonLine.parents);
+        let paramString = jsonLine.parameters ?? "{}";
+        let order = new Order(orderId, jsonLine.parents, paramString);
         orders.push(order);
         orderId2OrderMap.set(orderId, order);
 

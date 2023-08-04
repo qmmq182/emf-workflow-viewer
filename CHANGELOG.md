@@ -4,6 +4,9 @@ All notable changes to the "emf-workflow-viewer" extension will be documented in
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.3.0] - 2023-08-04
+
+- Different execution_modes have their distinct colors.
 
 ## [0.2.1] - 2023-06-28
 
