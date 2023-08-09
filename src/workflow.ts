@@ -1,10 +1,10 @@
 
 import { attribute as _, Digraph, Subgraph, Node, Edge, toDot } from 'ts-graphviz';
 
-const availableColorsForExecMode = ["greenyellow", "cyan", "coral", "navy"];
+const availableColorsForLabels = ["greenyellow", "cyan", "coral", "navy"];
 
 class Order {
-    static execModeColorMap: Map<string, string> = new Map();
+    static labelsColorMap: Map<string, string> = new Map();
 
     orderId: string;
     parentIdList: string[];
@@ -22,17 +22,28 @@ class Order {
 
     getNode() {
         if (this.node === undefined) {
-            let execModeLabelAndColor = this.parseExecutionMode();
+            let labelsLabelAndColor = this.parseEmfLabels();
             console.log("Parsed mode label and color: ");
-            console.log(execModeLabelAndColor);
-            let label = execModeLabelAndColor[0];
-            let color = execModeLabelAndColor[1];
-            this.node = new Node(this.orderId, {
-                [_.shape]: 'box',
-                [_.label]: label,
-                [_.color]: color
+            console.log(labelsLabelAndColor);
+            let hasLabels = labelsLabelAndColor[0];
+            let label = labelsLabelAndColor[1];
+            let color = labelsLabelAndColor[2];
+            if (hasLabels) {
+                this.node = new Node(this.orderId, {
+                    [_.shape]: 'box',
+                    [_.label]: label,
+                    [_.fillcolor]: color,
+                    [_.style]: "filled",
+    
+                });
+            } else {
+                this.node = new Node(this.orderId, {
+                    [_.shape]: 'box',
+                    [_.label]: this.orderId
+    
+                });
+            }
 
-            });
         }
         return this.node;
     }
@@ -56,33 +67,37 @@ class Order {
     /**
      * @returns A tuple that contains LABEL and COLOR
      */
-    parseExecutionMode(): [string, string] {
+    parseEmfLabels(): [boolean, string, string] {
+        let hasLabels = false;
         let label = this.orderId;
-        let color = "black";
-        let execMode: string = this.parameters.labels?.execution_mode?.join(",");
+        let fillcolor = "white";
+
+        let labels: string = this.parameters.labels;
         console.log("parameters: " + this.parameters.labels);
-        if (execMode !== undefined) {
-            label = label + " (exec_mode: " +  execMode + ")";
-            color = Order.pickColorForExecMode(execMode);
+        if (labels !== undefined) {
+            hasLabels = true;
+            let labelString = JSON.stringify(labels).replace(/"/g, '');
+            label = label + " " + labelString;
+            fillcolor = Order.pickColorForLabels(labelString);
         }
-        return [label, color];
+        return [hasLabels, label, fillcolor];
     }
 
 
-    static pickColorForExecMode(execMode: string): string {
-        console.log("Picking color for " + execMode);
+    static pickColorForLabels(labels: string): string {
+        console.log("Picking color for " + labels);
         // First see if already picked a color
-        if (Order.execModeColorMap.has(execMode)) {
-            return Order.execModeColorMap.get(execMode) ?? "yellow";
+        if (Order.labelsColorMap.has(labels)) {
+            return Order.labelsColorMap.get(labels) ?? "yellow";
         }
-        let alreadyPickedColorByOthers = new Set(Order.execModeColorMap.values());
-        console.log(`Colors already picked by others that is not '${execMode}':`);
+        let alreadyPickedColorByOthers = new Set(Order.labelsColorMap.values());
+        console.log(`Colors already picked by others that is not '${labels}':`);
         console.log(alreadyPickedColorByOthers);
-        for (let c of availableColorsForExecMode) {
+        for (let c of availableColorsForLabels) {
             console.log(`Test if ${c} is already used ...`);
             if (!alreadyPickedColorByOthers.has(c)) {
-                console.log(`Not used. Picked color ${c} for ${execMode}`);
-                Order.execModeColorMap.set(execMode, c);
+                console.log(`Not used. Picked color ${c} for ${labels}`);
+                Order.labelsColorMap.set(labels, c);
                 return c;
 
             }
